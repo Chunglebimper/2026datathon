@@ -1,0 +1,24 @@
+# Original raw datasets — keep local or in shared storage
+data/raw/
+
+# Python generated files
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node.js dependencies and build output
+node_modules/
+dist/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.vscode/
