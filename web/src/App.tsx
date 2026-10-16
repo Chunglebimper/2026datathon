@@ -4,7 +4,7 @@ import { MapExplorer } from "./components/MapExplorer";
 import { Methodology } from "./components/Methodology";
 import { Overview } from "./components/Overview";
 import { Recommendations } from "./components/Recommendations";
-import { coverageMetrics, loadDashboardData, placeOptions } from "./data";
+import { coverageMetrics, loadDashboardData, placeOptions, povertyRecommendation } from "./data";
 import type { BlockGroup, JoinedFeature, MapLayer } from "./types";
 
 const TABS = [
@@ -47,6 +47,7 @@ export function App() {
   }, []);
 
   const metrics = useMemo(() => coverageMetrics(rows), [rows]);
+  const poverty = useMemo(() => povertyRecommendation(rows), [rows]);
   const places = useMemo(() => placeOptions(rows), [rows]);
   const placeName =
     place === "all" ? "all Virginia jurisdictions" : places.find((item) => item.countyFips === place)?.name ?? "the selected jurisdiction";
@@ -69,10 +70,10 @@ export function App() {
           <p className="subtitle">Identifying Heat Vulnerability and Cooling Needs Across Virginia</p>
           <p className="intro">
             A working view for local government staff. It shows where block groups have
-            heat measurements, tree canopy, impervious surface, and median household
-            income. Heat severity describes conditions relative to the same city. It is
-            not a temperature, and this version does not rank cities against each other
-            or recommend a project yet.
+            heat measurements, tree canopy, impervious surface, median household
+            income, and the share of people below twice the poverty line. Heat
+            severity describes conditions relative to the same city. It is not a
+            temperature, and this version does not rank cities against each other.
           </p>
         </div>
       </header>
@@ -118,7 +119,7 @@ export function App() {
             {tab === "analysis" ? (
               <Analysis rows={visibleRows} placeName={placeName} statewideHeat={place === "all"} />
             ) : null}
-            {tab === "recommendations" ? <Recommendations /> : null}
+            {tab === "recommendations" ? <Recommendations poverty={poverty} /> : null}
             {tab === "methods" ? <Methodology metrics={metrics} /> : null}
           </div>
         ) : null}

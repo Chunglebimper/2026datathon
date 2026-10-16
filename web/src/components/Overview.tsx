@@ -53,6 +53,19 @@ export function Overview({ metrics }: OverviewProps) {
           </p>
         </article>
         <article className="metric-card">
+          <p className="metric-label">Below twice the poverty line</p>
+          <p className="metric-value">{percent(metrics.belowTwicePovertyPercent)}</p>
+          <p className="metric-note">
+            {count(metrics.belowTwicePovertyPeople)} of {count(metrics.povertyUniversePeople)} people
+            earn less than double the Census poverty line. In 2024 that line was $31,812 for a
+            family of four with two children, so twice the line is about $63,600.{" "}
+            {percent(metrics.belowPovertyPercent)} are under the poverty line itself.{" "}
+            {count(metrics.povertyMeasured)} block groups have someone in the count;{" "}
+            {count(metrics.povertyEmpty)} do not. {count(metrics.povertyWhereIncomeSuppressed)} still
+            have this count where median income is an insufficient sample.
+          </p>
+        </article>
+        <article className="metric-card">
           <p className="metric-label">Canopy and impervious means</p>
           <p className="metric-value">
             {surface(metrics.canopyMedian)}

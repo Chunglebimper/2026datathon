@@ -126,7 +126,7 @@ main {
   gap: 16px;
 }
 
-.metric-grid { grid-template-columns: repeat(4, 1fr); }
+.metric-grid { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
 .chart-grid, .method-grid { grid-template-columns: 1fr 1fr; }
 
 .metric-card, .chart-card, .recommendation-card, .method-grid article, .detail-card, .map-controls {
@@ -161,9 +161,14 @@ main {
 
 .map-layout {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 320px;
+  grid-template-columns: 240px minmax(0, 1fr) 320px;
   gap: 14px;
   align-items: start;
+}
+
+.map-controls {
+  max-height: calc(100vh - 88px);
+  overflow: auto;
 }
 
 .map-controls label, .map-controls legend {
@@ -229,7 +234,7 @@ fieldset {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-rows: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(5, minmax(0, 1fr));
   gap: 8px;
   margin-top: 8px;
 }
@@ -242,8 +247,16 @@ fieldset {
 .attribute-card .metric-label,
 .attribute-card .metric-value,
 .attribute-card p { color: inherit; }
-.attribute-card .metric-value { font-size: 1.45rem; margin: 0; }
-.attribute-card p { margin: 2px 0 0; font-size: 0.82rem; line-height: 1.25; }
+.attribute-card .metric-value { font-size: 1.28rem; margin: 0; }
+.attribute-card p {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.25;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
 .detail-meta {
   flex: none;
   margin-top: 8px;
@@ -282,6 +295,21 @@ dd { margin: 2px 0 0; }
 }
 
 .method-grid ul { margin: 8px 0 0; padding-left: 18px; }
+.source-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.source-list li {
+  background: #fffdf8;
+  border: 1px solid #e4ddd0;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.source-list a { color: #1c332b; font-weight: 700; }
+.source-list p { margin: 4px 0 0; }
 .status-banner {
   background: #fffdf8;
   border: 1px solid #e4ddd0;
@@ -316,6 +344,6 @@ dd { margin: 2px 0 0; }
   .metric-grid, .chart-grid, .method-grid, .map-layout, .recommendation-layout { grid-template-columns: 1fr; }
   .map-stage { display: grid; }
   .map-frame, .detail-card { height: 480px; min-height: 0; max-height: 480px; }
-  .attribute-stack { grid-template-columns: 1fr 1fr; }
+  .attribute-stack { grid-template-columns: 1fr 1fr; grid-template-rows: none; }
   main, .header-inner { padding-left: 16px; padding-right: 16px; }
 }

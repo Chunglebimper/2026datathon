@@ -5,12 +5,14 @@ export const LAYER_OPTIONS: { id: MapLayer; label: string }[] = [
   { id: "canopy", label: "Tree canopy" },
   { id: "impervious", label: "Impervious surface" },
   { id: "income", label: "Median household income" },
+  { id: "poverty", label: "Below twice the poverty line" },
 ];
 
 const HEAT_STOPS = ["#2f6f86", "#7eae9a", "#e4c56a", "#e08a45", "#b6402c"];
 const CANOPY_STOPS = ["#f4ead4", "#c9d7a2", "#7eae6a", "#3d7a49", "#1c4d32"];
 const IMPERVIOUS_STOPS = ["#f6f0e4", "#e7c39a", "#d08a5a", "#b35a38", "#7a3124"];
 const INCOME_STOPS = ["#f3e4cf", "#d7c4a3", "#8eafc4", "#3d7198", "#1d3f66"];
+const POVERTY_STOPS = ["#f4ead4", "#e7c39a", "#d08a5a", "#b35a38", "#7a3124"];
 
 export const MISSING_COLOR = "#cfc8be";
 export const INCOME_INSUFFICIENT_COLOR = "#8d86a3";
@@ -47,6 +49,12 @@ export function layerColor(row: BlockGroup, layer: MapLayer): string {
     const value = row.impervious_block_group_mean;
     if (value == null) return MISSING_COLOR;
     return ramp(IMPERVIOUS_STOPS, value / 80);
+  }
+  if (layer === "poverty") {
+    if (row.poverty_universe == null || row.poverty_universe <= 0 || row.below_twice_poverty == null) {
+      return MISSING_COLOR;
+    }
+    return ramp(POVERTY_STOPS, Math.min(row.below_twice_poverty / row.poverty_universe, 0.6) / 0.6);
   }
   if (row.median_household_income_status === "insufficient_sample") return INCOME_INSUFFICIENT_COLOR;
   if (row.median_household_income_status === "top_coded") return INCOME_TOP_CODED_COLOR;
@@ -100,6 +108,20 @@ export function legendFor(layer: MapLayer): { title: string; note: string; items
         { color: IMPERVIOUS_STOPS[3], label: "60" },
         { color: IMPERVIOUS_STOPS[4], label: "80 or higher" },
         { color: MISSING_COLOR, label: "Missing mean" },
+      ],
+    };
+  }
+  if (layer === "poverty") {
+    return {
+      title: "Share of people below twice the poverty line",
+      note: "In 2024 the poverty line was $31,812 for a family of four with two children. Twice that line is about $63,600. Darker means a larger share of people below it, including people just above the official line.",
+      items: [
+        { color: POVERTY_STOPS[0], label: "0%" },
+        { color: POVERTY_STOPS[1], label: "15%" },
+        { color: POVERTY_STOPS[2], label: "30%" },
+        { color: POVERTY_STOPS[3], label: "45%" },
+        { color: POVERTY_STOPS[4], label: "60% or higher" },
+        { color: MISSING_COLOR, label: "No one in the count" },
       ],
     };
   }

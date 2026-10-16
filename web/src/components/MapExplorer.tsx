@@ -135,6 +135,16 @@ function dollarComparison(value: number, peers: number[], place: string): string
   return `${money(Math.abs(delta))} ${direction} the ${place} median`;
 }
 
+function povertyNote(share: number, peers: number[], below: number | null, universe: number | null): string {
+  const people = `${formatNumber(below, 0)} of ${formatNumber(universe, 0)}`;
+  const mid = median(peers);
+  if (mid == null) return people;
+  const delta = share - mid;
+  const compare =
+    Math.abs(delta) < 0.5 ? "Near city median" : `${Math.abs(delta).toFixed(0)} pts ${delta > 0 ? "above" : "below"} median`;
+  return `${compare} · ${people}`;
+}
+
 function comparedWith(value: number, peers: number[], place: string, unit: string, digits: number): string {
   const mid = median(peers);
   if (mid == null) return "No other measured block groups in this jurisdiction.";
@@ -174,6 +184,10 @@ function AttributeCards({
   const incomePeers = peers
     .filter((item) => item.median_household_income_status === "numeric")
     .map((item) => item.median_household_income_dollars)
+    .filter((value): value is number => value != null);
+  const povertyShare = shareUnderTwicePoverty(row);
+  const povertyPeers = peers
+    .map(shareUnderTwicePoverty)
     .filter((value): value is number => value != null);
 
   const cards: { title: string; value: string; note: string; color: string }[] = [
@@ -233,6 +247,15 @@ function AttributeCards({
               ? "Insufficient sample"
               : "No income record",
     },
+    {
+      title: "Below 2× poverty",
+      color: layerColor(row, "poverty"),
+      value: povertyShare == null ? "No count" : `${povertyShare.toFixed(0)}%`,
+      note:
+        povertyShare == null
+          ? "No people counted"
+          : povertyNote(povertyShare, povertyPeers, row.below_twice_poverty, row.poverty_universe),
+    },
   ];
 
   return (
@@ -250,6 +273,31 @@ function AttributeCards({
       ))}
     </div>
   );
+}
+
+function shareUnderTwicePoverty(row: BlockGroup): number | null {
+  if (row.poverty_universe == null || row.poverty_universe <= 0 || row.below_twice_poverty == null) {
+    return null;
+  }
+  return (row.below_twice_poverty / row.poverty_universe) * 100;
+}
+
+function povertyText(row: JoinedFeature["properties"]): string {
+  if (row.poverty_universe == null) return "No poverty record.";
+  if (row.poverty_universe <= 0) return "Poverty universe is zero.";
+  const underLine =
+    row.below_poverty == null
+      ? "Not measured"
+      : `${Math.round(row.below_poverty).toLocaleString("en-US")} under the poverty line`;
+  const underTwice =
+    row.below_twice_poverty == null
+      ? "Not measured"
+      : `${Math.round(row.below_twice_poverty).toLocaleString("en-US")} below twice the poverty line`;
+  const margin =
+    row.below_twice_poverty_moe == null
+      ? ""
+      : ` (±${Math.round(row.below_twice_poverty_moe).toLocaleString("en-US")} people on that count)`;
+  return `${underLine}; ${underTwice} of ${Math.round(row.poverty_universe).toLocaleString("en-US")}${margin}.`;
 }
 
 function incomeText(row: JoinedFeature["properties"]): string {
@@ -326,6 +374,7 @@ export function MapExplorer({
                 </li>
               ))}
             </ul>
+            <p>{legend.note}</p>
           </div>
         </div>
         <div className="map-stage">
@@ -378,6 +427,10 @@ export function MapExplorer({
                     <div>
                       <dt>Income detail</dt>
                       <dd>{incomeText(selected.properties)}</dd>
+                    </div>
+                    <div>
+                      <dt>Poverty ratio, 2024</dt>
+                      <dd>{povertyText(selected.properties)}</dd>
                     </div>
                     <div>
                       <dt>Land / water area</dt>
