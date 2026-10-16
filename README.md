@@ -64,19 +64,36 @@ Open the local URL printed by Vite, usually `http://127.0.0.1:5173/`. `npm run b
 
 ## Publish it on GitHub Pages
 
-The live site is the contents of `web/dist`, not the repository root. `web/dist` is gitignored, so do not commit the build. A push to `main` or `dashboard` runs `.github/workflows/pages.yml`, which installs dependencies, builds `web/`, and publishes that build.
+The Pages screen that offers only **root** or **docs** is “Deploy from a branch.” That choice does not look inside `web/`. It publishes one folder of finished files, and that folder has to contain `index.html`.
 
-One-time setup on GitHub:
+Use **docs**, not the repository root. The root is the project, and `web/index.html` is only the development page. It loads TypeScript, which GitHub Pages cannot run. The publishable site is the Vite build:
 
-1. Open the repository **Settings → Pages**.
-2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
-3. Push the `dashboard` branch (or `main`) so the workflow runs. The map files in `web/public/data/` have to be in that commit, because the Action only builds what is in the repository.
+- `docs/index.html`
+- `docs/assets/` (the compiled JavaScript and CSS)
+- `docs/data/` (the block-group table, poverty table, and map boundaries)
+- `docs/.nojekyll` (tells GitHub to serve those files as they are)
 
-When the workflow finishes, the site is at:
+Those files are already in `docs/`. Commit and push the `dashboard` branch, then in **Settings → Pages** set:
+
+1. **Source:** Deploy from a branch
+2. **Branch:** `dashboard`
+3. **Folder:** `/docs`
+
+Save. After GitHub finishes the deploy, the site is at:
 
 https://chunglebimper.github.io/2026datathon/
 
-The Actions tab shows the run. The Pages setting also shows the published URL after the first successful deploy.
+Rebuild `docs/` after a site change:
+
+```bash
+cd web
+npm run build
+cd ..
+rm -rf docs
+mkdir docs
+cp -R web/dist/. docs/
+touch docs/.nojekyll
+```
 
 ## Sources
 
