@@ -17,10 +17,135 @@ interface Point {
   geoid: string;
 }
 
+interface FitResult {
+  slope: number;
+  intercept: number;
+  r: number;
+  r2: number;
+  pValue: number;
+  line: Point[];
+}
+
 interface AnalysisProps {
   rows: BlockGroup[];
   placeName: string;
   statewideHeat: boolean;
+}
+
+function leastSquares(data: Point[]): FitResult | null {
+  const n = data.length;
+  if (n < 3) return null;
+
+  let sumX = 0;
+  let sumY = 0;
+  let sumXY = 0;
+  let sumXX = 0;
+  let sumYY = 0;
+
+  for (const point of data) {
+    sumX += point.x;
+    sumY += point.y;
+    sumXY += point.x * point.y;
+    sumXX += point.x * point.x;
+    sumYY += point.y * point.y;
+  }
+
+  const denomX = n * sumXX - sumX * sumX;
+  if (denomX <= 0) return null; // Variance of X must be > 0
+
+  const denomY = Math.max(0, n * sumYY - sumY * sumY);
+  const numerator = n * sumXY - sumX * sumY;
+
+  const slope = numerator / denomX;
+  const intercept = (sumY - slope * sumX) / n;
+
+  // Clamp r to [-1, 1] safely
+  const r = denomY > 0 ? Math.min(1, Math.max(-1, numerator / Math.sqrt(denomX * denomY))) : 0;
+  const r2 = r * r;
+
+  // t-statistic for p-value
+  const df = n - 2;
+  const t = Math.abs(r) * Math.sqrt(df / Math.max(1 - r2, 1e-15));
+  const rawP = studentTPValue(t, df);
+  const pValue = Number.isNaN(rawP) ? 1 : rawP;
+
+  const xs = data.map((point) => point.x);
+  const min = Math.min(...xs);
+  const max = Math.max(...xs);
+
+  return {
+    slope,
+    intercept,
+    r,
+    r2,
+    pValue,
+    line: [
+      { x: min, y: intercept + slope * min, name: "Least-squares fit", geoid: "" },
+      { x: max, y: intercept + slope * max, name: "Least-squares fit", geoid: "" },
+    ],
+  };
+}
+
+function studentTPValue(t: number, df: number): number {
+  const x = df / (df + t * t);
+  return incompleteBeta(df / 2, 0.5, x);
+}
+
+function incompleteBeta(a: number, b: number, x: number): number {
+  if (x <= 0) return 0;
+  if (x >= 1) return 1;
+
+  if (x > (a + 1) / (a + b + 2)) {
+    return 1 - incompleteBeta(b, a, 1 - x);
+  }
+
+  const lbeta = logGamma(a) + logGamma(b) - logGamma(a + b);
+  const front = Math.exp(a * Math.log(x) + b * Math.log(1 - x) - lbeta) / a;
+
+  let f = 1.0;
+  let c = 1.0;
+  let d = 0.0;
+
+  for (let i = 0; i <= 200; i++) {
+    const m = Math.floor(i / 2);
+    let numerator: number;
+
+    if (i === 0) {
+      numerator = 1;
+    } else if (i % 2 === 0) {
+      numerator = (m * (b - m) * x) / ((a + 2 * m - 1) * (a + 2 * m));
+    } else {
+      numerator = -((a + m) * (a + b + m) * x) / ((a + 2 * m) * (a + 2 * m + 1));
+    }
+
+    d = 1.0 + numerator * d;
+    if (Math.abs(d) < 1e-30) d = 1e-30;
+    d = 1.0 / d;
+
+    c = 1.0 + numerator / c;
+    if (Math.abs(c) < 1e-30) c = 1e-30;
+
+    f = f * d * c;
+    if (Math.abs(d * c - 1.0) < 1e-12) break;
+  }
+
+  return front * f;
+}
+
+function logGamma(z: number): number {
+  const c = [
+    676.5203681218851, -1259.139216722289, 771.3234287776531,
+    -176.61502916214059, 12.507343278686905, -0.13857109526572012,
+    9.984369578019571e-6, 1.5056327351493116e-7,
+  ];
+  if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - logGamma(1 - z);
+  z -= 1;
+  let x = 0.99999999999980993;
+  for (let i = 0; i < c.length; i++) {
+    x += c[i] / (z + i + 1);
+  }
+  const t = z + c.length - 0.5;
+  return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
 }
 
 function points(
@@ -49,32 +174,16 @@ function SmallDot(props: unknown) {
   return <circle cx={point.cx} cy={point.cy} r={4.1} fill="#2f6b4f" fillOpacity={0.55} />;
 }
 
-function leastSquares(data: Point[]): { slope: number; line: Point[] } | null {
-  if (data.length < 2) return null;
-  let sumX = 0;
-  let sumY = 0;
-  let sumXY = 0;
-  let sumXX = 0;
-  for (const point of data) {
-    sumX += point.x;
-    sumY += point.y;
-    sumXY += point.x * point.y;
-    sumXX += point.x * point.x;
-  }
-  const denominator = data.length * sumXX - sumX * sumX;
-  if (denominator === 0) return null;
-  const slope = (data.length * sumXY - sumX * sumY) / denominator;
-  const intercept = (sumY - slope * sumX) / data.length;
-  const xs = data.map((point) => point.x);
-  const min = Math.min(...xs);
-  const max = Math.max(...xs);
-  return {
-    slope,
-    line: [
-      { x: min, y: intercept + slope * min, name: "Fit", geoid: "" },
-      { x: max, y: intercept + slope * max, name: "Fit", geoid: "" },
-    ],
-  };
+function formatPValue(p: number): string {
+  if (p < 0.001) return "p < 0.001";
+  return `p = ${p.toFixed(3)}`;
+}
+
+function formatChartValue(value: number, name: string): string {
+  const lower = name.toLowerCase();
+  if (lower.includes("income")) return `$${Math.round(value).toLocaleString("en-US")}`;
+  if (lower.includes("poverty") || lower.includes("%")) return `${value.toFixed(1)}%`;
+  return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
 }
 
 function ChartCard({
@@ -99,12 +208,13 @@ function ChartCard({
   percentAxis?: boolean;
 }) {
   const fit = leastSquares(data);
+
   const slopeText = fit
     ? incomeAxis
       ? `${(fit.slope * 10000).toLocaleString("en-US", { maximumFractionDigits: 2 })} ${yLabel.toLowerCase()} per $10,000 of median income`
       : percentAxis
         ? `${(fit.slope * 10).toLocaleString("en-US", { maximumFractionDigits: 2 })} ${yLabel.toLowerCase()} per 10 percentage points`
-        : `${fit.slope.toLocaleString("en-US", { maximumFractionDigits: 3 })} ${yLabel.toLowerCase()} per one unit on the horizontal axis`
+        : `${fit.slope.toLocaleString("en-US", { maximumFractionDigits: 3 })} ${yLabel.toLowerCase()} per one unit on horizontal axis`
     : "";
 
   return (
@@ -113,10 +223,17 @@ function ChartCard({
       <p className="chart-caption">
         {caption} Sample size: {data.length.toLocaleString("en-US")} block groups. Blank
         values are left off the chart and are not drawn at zero.
-        {fit
-          ? ` The line is an ordinary least-squares fit of these points: ${slopeText}. It summarizes the plotted block groups only.`
-          : ""}
       </p>
+
+      {/* Prominent Stats Badge Bar */}
+      {fit ? (
+        <div className="chart-stats-badge" style={{ margin: "6px 0", fontSize: "0.85rem", color: "#2f6b4f" }}>
+          <strong>r:</strong> {fit.r.toFixed(2)} &nbsp;|&nbsp; 
+          <strong>R²:</strong> {fit.r2.toFixed(2)} &nbsp;|&nbsp; 
+          <strong>p-value:</strong> {formatPValue(fit.pValue)}
+        </div>
+      ) : null}
+
       {data.length === 0 ? (
         <p className="empty-state">No block groups in this selection have both measurements.</p>
       ) : (
@@ -150,7 +267,12 @@ function ChartCard({
                 ]}
                 labelFormatter={(_label, payload) => {
                   const point = payload?.[0]?.payload as Point | undefined;
-                  return point?.geoid ? `${point.name} · ${point.geoid}` : "Least-squares fit";
+                  if (point?.geoid) {
+                    return `${point.name} · ${point.geoid}`;
+                  }
+                  return fit
+                    ? `Least-squares fit (r=${fit.r.toFixed(2)}, R²=${fit.r2.toFixed(2)}, ${formatPValue(fit.pValue)})`
+                    : "Least-squares fit";
                 }}
               />
               <Scatter
@@ -186,13 +308,6 @@ const dollars = (value: number) =>
 const plain = (value: number) => value.toFixed(0);
 const percentTick = (value: number) => `${Math.round(value)}%`;
 
-function formatChartValue(value: number, name: string): string {
-  const lower = name.toLowerCase();
-  if (lower.includes("income")) return `$${Math.round(value).toLocaleString("en-US")}`;
-  if (lower.includes("poverty") || lower.includes("%")) return `${value.toFixed(1)}%`;
-  return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
-}
-
 function shareUnderTwicePoverty(row: BlockGroup): number | null {
   if (row.poverty_universe == null || row.poverty_universe <= 0 || row.below_twice_poverty == null) {
     return null;
@@ -206,6 +321,12 @@ export function Analysis({ rows, placeName, statewideHeat }: AnalysisProps) {
     (row) =>
       row.median_household_income_status === "numeric" ? row.median_household_income_dollars : null,
     (row) => row.tree_canopy_block_group_mean,
+  );
+  const incomeHeat = points(
+    rows,
+    (row) =>
+      row.median_household_income_status === "numeric" ? row.median_household_income_dollars : null,
+    (row) => row.heat_severity_block_group_mean,
   );
   const incomeImpervious = points(
     rows,
@@ -274,12 +395,22 @@ export function Analysis({ rows, placeName, statewideHeat }: AnalysisProps) {
         />
         <ChartCard
           title="Income and share below twice the poverty line"
-          caption="Horizontal axis: median household income in 2024 dollars. Vertical axis: percent of people below twice the Census poverty line. In 2024 that doubled line was about $63,600 for a family of four with two children."
+          caption="Horizontal axis: median household income in 2024 dollars. Vertical axis: percent of people below twice the Census poverty line."
           points={povertyIncome}
           xLabel="Median income"
           yLabel="Below twice the poverty line (%)"
           xTick={dollars}
           yDomain={[0, 100]}
+          incomeAxis
+        />
+        <ChartCard
+          title="Income and heat severity"
+          caption="Horizontal axis: median household income in 2024 dollars. Vertical axis: mean of within-city heat classes, not degrees."
+          points={incomeHeat}
+          xLabel="Median income"
+          yLabel="Heat class mean"
+          xTick={dollars}
+          yDomain={[1, 5]}
           incomeAxis
         />
         <ChartCard
