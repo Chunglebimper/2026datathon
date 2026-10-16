@@ -10,19 +10,27 @@ interface RecommendationsProps {
   metrics?: unknown;
 }
 
-export function Recommendations({ poverty, visibleRows }: RecommendationsProps) {
+const PRIMARY_RECS = [
+  "Protecting existing tree canopies so cool areas will stay cool. Trees also absorb carbon, which helps with climate change.",
+  "Planting where heat is worst, which is essential to mitigating long-term heat inequality.",
+  "Shading sidewalks and bus stops, which are excessively hot and likely used by marginalized populations that rely on public transit.",
+  "Expanding the Energy Assistance Program and improving the efficiency of cooling systems in rentals for more affordable cooling solutions.",
+  "Creating cooling centers in the hottest areas, especially during summer months and during heat waves.",
+];
+
+export function Recommendations({ visibleRows }: RecommendationsProps) {
   const ranked = rankNeighborhoods(visibleRows, 10);
 
   return (
     <section id="recommendations" className="section">
       <div className="section-heading">
         <h2>Recommendations</h2>
-        <p>
-          Our primary recommendation is to direct cooling-cost assistance to the roughly
-          {formatPercent(poverty.twicePovertyPercent)} of residents living below twice the federal
-          poverty line. We do not yet have validated heat data that lets us narrow this
-          further to specific hot neighborhoods.
-        </p>
+        <p>Our primary recommendations are the following:</p>
+        <ol className="primary-recs">
+          {PRIMARY_RECS.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ol>
       </div>
       <div className="recommendation-layout">
         <div className="ranking-card">

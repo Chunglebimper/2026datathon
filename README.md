@@ -100,5 +100,4 @@ touch docs/.nojekyll
 - Heat severity: Trust for Public Land, [Heat Severity — USA 2025](https://www.arcgis.com/home/item.html?id=48edb3800dab4f70ae42eb0ccf5e08f4#overview)
 - Tree canopy and impervious surface: [MRLC viewer](https://www.mrlc.gov/viewer/) and the [MRLC data download](https://www.mrlc.gov/data)
 - Income and poverty ratio: U.S. Census Bureau, 2024 American Community Survey 5-year estimates
-- Energy Assistance Program household counts, fiscal years 2017–2025: [Virginia Open Data Portal](https://data.virginia.gov/dataset/energy-assistance-program-eap-household-counts). This dataset is cited in Methods. It is not joined into the map.
 - Background essay: Johnny Finn, [The Unequal Geography of Heat](https://johnnyfinn.substack.com/p/the-unequal-geography-of-heat) (September 3, 2026)

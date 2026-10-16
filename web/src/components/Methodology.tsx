@@ -130,15 +130,6 @@ export function Methodology({ metrics }: { metrics: CoverageMetrics }) {
               </p>
             </li>
             <li>
-              <a href="https://data.virginia.gov/dataset/energy-assistance-program-eap-household-counts" target="_blank" rel="noreferrer">
-                Energy Assistance Program (EAP) household counts
-              </a>
-              <p>
-                Virginia Open Data Portal. Household counts for fiscal years 2017–2025, from the
-                Virginia Department of Social Services.
-              </p>
-            </li>
-            <li>
               <a href="https://johnnyfinn.substack.com/p/the-unequal-geography-of-heat" target="_blank" rel="noreferrer">
                 The Unequal Geography of Heat
               </a>
