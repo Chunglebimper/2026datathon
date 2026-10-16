@@ -228,9 +228,10 @@ function ChartCard({
       {/* Prominent Stats Badge Bar */}
       {fit ? (
         <div className="chart-stats-badge" style={{ margin: "6px 0", fontSize: "0.85rem", color: "#2f6b4f" }}>
-          <strong>r:</strong> {fit.r.toFixed(2)} &nbsp;|&nbsp; 
-          <strong>R²:</strong> {fit.r2.toFixed(2)} &nbsp;|&nbsp; 
+          <strong>r:</strong> {fit.r.toFixed(2)} &nbsp;|&nbsp;
+          <strong>R²:</strong> {fit.r2.toFixed(2)} &nbsp;|&nbsp;
           <strong>p-value:</strong> {formatPValue(fit.pValue)}
+          <div style={{ marginTop: 2 }}>{slopeText}</div>
         </div>
       ) : null}
 
