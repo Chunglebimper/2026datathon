@@ -18,7 +18,9 @@ h1, h2, h3 {
 }
 
 .site-header {
-  background: #1c332b;
+  background:
+    linear-gradient(rgba(28, 51, 43, 0.82), rgba(28, 51, 43, 0.6)),
+    url("/data/Richmond_Scenic.jpeg") center / cover no-repeat #1c332b;
   color: #f7f3ea;
 }
 

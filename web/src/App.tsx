@@ -69,11 +69,14 @@ export function App() {
           <h1>Hot Neighborhoods, Higher Costs</h1>
           <p className="subtitle">Identifying Heat Vulnerability and Cooling Needs Across Virginia</p>
           <p className="intro">
-            A working view for local government staff. It shows where block groups have
-            heat measurements, tree canopy, impervious surface, median household
-            income, and the share of people below twice the poverty line. Heat
-            severity describes conditions relative to the same city. It is not a
-            temperature, and this version does not rank cities against each other.
+            Extreme heat is not experienced equally across Virginia. Neighborhoods with 
+            limited tree canopy and extensive paved surfaces experience higher surface temperatures, 
+            while residents with limited financial resources may face additional barriers to staying cool.
+            Our interactive dashboard allows state and local decision-makers to find and support low-income 
+            communities suffering from heat severity.
+
+
+            
           </p>
         </div>
       </header>
