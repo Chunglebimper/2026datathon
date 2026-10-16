@@ -22,6 +22,13 @@ export function Overview({ metrics }: OverviewProps) {
     <section id="overview" className="section">
       <div className="section-heading">
         <h2>Overview</h2>
+        <p className="lead">
+          Extreme heat is not experienced equally across Virginia. Neighborhoods with limited
+          tree canopy and extensive paved surfaces experience higher surface temperatures, while
+          residents with limited financial resources may face additional barriers to staying cool.
+          Our interactive dashboard allows state and local decision-makers to find and support
+          low-income communities suffering from heat severity.
+        </p>
         <p>
           Counts below are calculated from the cleaned Virginia block-group table. Blank
           measurements stay blank. They are not filled with zero.

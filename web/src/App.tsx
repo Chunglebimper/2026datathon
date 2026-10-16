@@ -65,17 +65,8 @@ export function App() {
     <>
       <header className="site-header">
         <div className="header-inner">
-          <p className="eyebrow">Virginia Datathon · neighborhood conditions</p>
           <h1>Hot Neighborhoods, Higher Costs</h1>
           <p className="subtitle">Identifying Heat Vulnerability and Cooling Needs Across Virginia</p>
-          <p className="intro">
-            Extreme heat is not experienced equally across Virginia. Neighborhoods with
-            limited tree canopy and extensive paved surfaces experience higher surface temperatures,
-            while residents with limited financial resources may face additional barriers to staying cool.
-            Our interactive dashboard allows state and local decision-makers to find and support low-income
-            communities suffering from heat severity.
-
-          </p>
         </div>
       </header>
       <nav className="tab-bar" role="tablist" aria-label="Dashboard sections">
