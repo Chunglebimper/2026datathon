@@ -1,4 +1,4 @@
-export type MapLayer = "heat" | "canopy" | "impervious" | "income";
+export type MapLayer = "heat" | "canopy" | "impervious" | "income" | "poverty";
 
 export interface BlockGroup {
   block_group_geoid: string;
@@ -15,6 +15,12 @@ export interface BlockGroup {
   median_household_income_code: string;
   median_household_income_dollars: number | null;
   median_household_income_moe_dollars: number | null;
+  poverty_universe: number | null;
+  poverty_universe_moe: number | null;
+  below_poverty: number | null;
+  below_poverty_moe: number | null;
+  below_twice_poverty: number | null;
+  below_twice_poverty_moe: number | null;
   tree_canopy_block_group_mean: number | null;
   tree_canopy_block_group_median: number | null;
   tree_canopy_block_group_max: number | null;
@@ -59,6 +65,14 @@ export interface CoverageMetrics {
   imperviousMax: number | null;
   imperviousMeasured: number;
   canopyAnomalous: number;
+  povertyMeasured: number;
+  povertyEmpty: number;
+  povertyUniversePeople: number;
+  belowPovertyPeople: number;
+  belowTwicePovertyPeople: number;
+  belowPovertyPercent: number;
+  belowTwicePovertyPercent: number;
+  povertyWhereIncomeSuppressed: number;
 }
 
 export interface PlaceOption {

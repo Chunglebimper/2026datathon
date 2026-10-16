@@ -86,6 +86,7 @@ function ChartCard({
   xTick,
   yDomain,
   incomeAxis,
+  percentAxis,
 }: {
   title: string;
   caption: string;
@@ -95,12 +96,15 @@ function ChartCard({
   xTick: (value: number) => string;
   yDomain?: [number, number];
   incomeAxis?: boolean;
+  percentAxis?: boolean;
 }) {
   const fit = leastSquares(data);
   const slopeText = fit
     ? incomeAxis
       ? `${(fit.slope * 10000).toLocaleString("en-US", { maximumFractionDigits: 2 })} ${yLabel.toLowerCase()} per $10,000 of median income`
-      : `${fit.slope.toLocaleString("en-US", { maximumFractionDigits: 3 })} ${yLabel.toLowerCase()} per one unit on the horizontal axis`
+      : percentAxis
+        ? `${(fit.slope * 10).toLocaleString("en-US", { maximumFractionDigits: 2 })} ${yLabel.toLowerCase()} per 10 percentage points`
+        : `${fit.slope.toLocaleString("en-US", { maximumFractionDigits: 3 })} ${yLabel.toLowerCase()} per one unit on the horizontal axis`
     : "";
 
   return (
@@ -141,9 +145,7 @@ function ChartCard({
               <Tooltip
                 cursor={{ strokeDasharray: "3 3" }}
                 formatter={(value: number, name: string) => [
-                  name.toLowerCase().includes("income")
-                    ? `$${Math.round(value).toLocaleString("en-US")}`
-                    : value.toLocaleString("en-US", { maximumFractionDigits: 2 }),
+                  formatChartValue(value, name),
                   name,
                 ]}
                 labelFormatter={(_label, payload) => {
@@ -182,6 +184,21 @@ function ChartCard({
 const dollars = (value: number) =>
   value >= 1000 ? `$${Math.round(value / 1000)}k` : `$${Math.round(value)}`;
 const plain = (value: number) => value.toFixed(0);
+const percentTick = (value: number) => `${Math.round(value)}%`;
+
+function formatChartValue(value: number, name: string): string {
+  const lower = name.toLowerCase();
+  if (lower.includes("income")) return `$${Math.round(value).toLocaleString("en-US")}`;
+  if (lower.includes("poverty") || lower.includes("%")) return `${value.toFixed(1)}%`;
+  return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+}
+
+function shareUnderTwicePoverty(row: BlockGroup): number | null {
+  if (row.poverty_universe == null || row.poverty_universe <= 0 || row.below_twice_poverty == null) {
+    return null;
+  }
+  return (row.below_twice_poverty / row.poverty_universe) * 100;
+}
 
 export function Analysis({ rows, placeName, statewideHeat }: AnalysisProps) {
   const incomeCanopy = points(
@@ -206,7 +223,19 @@ export function Analysis({ rows, placeName, statewideHeat }: AnalysisProps) {
     (row) => row.impervious_block_group_mean,
     (row) => row.heat_severity_block_group_mean,
   );
+  const povertyIncome = points(
+    rows,
+    (row) =>
+      row.median_household_income_status === "numeric" ? row.median_household_income_dollars : null,
+    shareUnderTwicePoverty,
+  );
+  const povertyHeat = points(
+    rows,
+    shareUnderTwicePoverty,
+    (row) => row.heat_severity_block_group_mean,
+  );
   const omittedIncome = rows.filter((row) => row.median_household_income_status !== "numeric").length;
+  const omittedPoverty = rows.filter((row) => shareUnderTwicePoverty(row) == null).length;
 
   return (
     <section id="analysis" className="section">
@@ -221,7 +250,8 @@ export function Analysis({ rows, placeName, statewideHeat }: AnalysisProps) {
       <p className="inline-note">
         {omittedIncome.toLocaleString("en-US")} block groups in this view are omitted from
         the income charts because the estimate is suppressed, top-coded, or otherwise not a
-        single dollar amount.
+        single dollar amount. {omittedPoverty.toLocaleString("en-US")} are omitted from the
+        poverty charts because the poverty universe is zero or missing.
       </p>
       <div className="chart-grid">
         <ChartCard
@@ -241,6 +271,26 @@ export function Analysis({ rows, placeName, statewideHeat }: AnalysisProps) {
           yLabel="Impervious mean"
           xTick={dollars}
           incomeAxis
+        />
+        <ChartCard
+          title="Income and share below twice the poverty line"
+          caption="Horizontal axis: median household income in 2024 dollars. Vertical axis: percent of people below twice the Census poverty line. In 2024 that doubled line was about $63,600 for a family of four with two children."
+          points={povertyIncome}
+          xLabel="Median income"
+          yLabel="Below twice the poverty line (%)"
+          xTick={dollars}
+          yDomain={[0, 100]}
+          incomeAxis
+        />
+        <ChartCard
+          title="Share below twice the poverty line and heat severity"
+          caption="Horizontal axis: percent of people below twice the Census poverty line. Vertical axis: mean of within-city heat classes, not degrees."
+          points={povertyHeat}
+          xLabel="Below twice the poverty line"
+          yLabel="Heat class mean"
+          xTick={percentTick}
+          yDomain={[1, 5]}
+          percentAxis
         />
         <ChartCard
           title="Heat severity and tree canopy"

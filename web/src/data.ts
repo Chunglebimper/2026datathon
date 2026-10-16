@@ -5,6 +5,12 @@ const NUMERIC_FIELDS = [
   "water_area_sq_m",
   "median_household_income_dollars",
   "median_household_income_moe_dollars",
+  "poverty_universe",
+  "poverty_universe_moe",
+  "below_poverty",
+  "below_poverty_moe",
+  "below_twice_poverty",
+  "below_twice_poverty_moe",
   "tree_canopy_block_group_mean",
   "tree_canopy_block_group_median",
   "tree_canopy_block_group_max",
@@ -122,6 +128,109 @@ export function coverageMetrics(rows: BlockGroup[]): CoverageMetrics {
     imperviousMax: impervious.length ? Math.max(...impervious) : null,
     imperviousMeasured: impervious.length,
     canopyAnomalous: rows.filter((row) => row.tree_canopy_block_group_max_anomalous === "yes").length,
+    ...povertyMetrics(rows),
+  };
+}
+
+function povertyMetrics(rows: BlockGroup[]): Pick<
+  CoverageMetrics,
+  | "povertyMeasured"
+  | "povertyEmpty"
+  | "povertyUniversePeople"
+  | "belowPovertyPeople"
+  | "belowTwicePovertyPeople"
+  | "belowPovertyPercent"
+  | "belowTwicePovertyPercent"
+  | "povertyWhereIncomeSuppressed"
+> {
+  const measured = rows.filter((row) => row.poverty_universe != null && row.poverty_universe > 0);
+  const universe = measured.reduce((sum, row) => sum + (row.poverty_universe ?? 0), 0);
+  const belowPoverty = measured.reduce((sum, row) => sum + (row.below_poverty ?? 0), 0);
+  const belowTwice = measured.reduce((sum, row) => sum + (row.below_twice_poverty ?? 0), 0);
+  const suppressed = measured.filter((row) => row.median_household_income_status === "insufficient_sample");
+  return {
+    povertyMeasured: measured.length,
+    povertyEmpty: rows.filter((row) => row.poverty_universe === 0).length,
+    povertyUniversePeople: universe,
+    belowPovertyPeople: belowPoverty,
+    belowTwicePovertyPeople: belowTwice,
+    belowPovertyPercent: universe === 0 ? 0 : (belowPoverty / universe) * 100,
+    belowTwicePovertyPercent: universe === 0 ? 0 : (belowTwice / universe) * 100,
+    povertyWhereIncomeSuppressed: suppressed.length,
+  };
+}
+
+function quantile(values: number[], fraction: number): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const index = (sorted.length - 1) * fraction;
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  if (lower === upper) return sorted[lower];
+  return sorted[lower] * (upper - index) + sorted[upper] * (index - lower);
+}
+
+export interface PovertyRecommendation {
+  twicePovertyPercent: number;
+  povertyPercent: number;
+  universePeople: number;
+  twicePovertyPeople: number;
+  suppressedBlockGroups: number;
+  suppressedPeople: number;
+  suppressedTwicePovertyPercent: number;
+  hotLowCanopyPeople: number;
+  hotLowCanopyTwicePovertyPercent: number;
+  otherHeatTwicePovertyPercent: number;
+}
+
+export function povertyRecommendation(rows: BlockGroup[]): PovertyRecommendation {
+  const measured = rows.filter((row) => row.poverty_universe != null && row.poverty_universe > 0);
+  const universe = measured.reduce((sum, row) => sum + (row.poverty_universe ?? 0), 0);
+  const belowPoverty = measured.reduce((sum, row) => sum + (row.below_poverty ?? 0), 0);
+  const belowTwice = measured.reduce((sum, row) => sum + (row.below_twice_poverty ?? 0), 0);
+  const suppressed = measured.filter((row) => row.median_household_income_status === "insufficient_sample");
+  const suppressedPeople = suppressed.reduce((sum, row) => sum + (row.poverty_universe ?? 0), 0);
+  const suppressedTwice = suppressed.reduce((sum, row) => sum + (row.below_twice_poverty ?? 0), 0);
+  const heatValues = rows
+    .map((row) => row.heat_severity_block_group_mean)
+    .filter((value): value is number => value != null);
+  const canopyValues = rows
+    .map((row) => row.tree_canopy_block_group_mean)
+    .filter((value): value is number => value != null);
+  const heatCut = quantile(heatValues, 0.75);
+  const canopyCut = quantile(canopyValues, 0.25);
+  const withHeat = measured.filter((row) => row.heat_severity_block_group_mean != null);
+  const hotLow =
+    heatCut == null || canopyCut == null
+      ? []
+      : withHeat.filter(
+          (row) =>
+            (row.heat_severity_block_group_mean ?? 0) >= heatCut &&
+            row.tree_canopy_block_group_mean != null &&
+            row.tree_canopy_block_group_mean <= canopyCut,
+        );
+  const otherHeat =
+    heatCut == null
+      ? []
+      : withHeat.filter((row) => (row.heat_severity_block_group_mean ?? 0) < heatCut);
+  const share = (group: BlockGroup[]) => {
+    const people = group.reduce((sum, row) => sum + (row.poverty_universe ?? 0), 0);
+    const under = group.reduce((sum, row) => sum + (row.below_twice_poverty ?? 0), 0);
+    return { people, percent: people === 0 ? 0 : (under / people) * 100 };
+  };
+  const hotShare = share(hotLow);
+  const otherShare = share(otherHeat);
+  return {
+    twicePovertyPercent: universe === 0 ? 0 : (belowTwice / universe) * 100,
+    povertyPercent: universe === 0 ? 0 : (belowPoverty / universe) * 100,
+    universePeople: universe,
+    twicePovertyPeople: belowTwice,
+    suppressedBlockGroups: suppressed.length,
+    suppressedPeople,
+    suppressedTwicePovertyPercent: suppressedPeople === 0 ? 0 : (suppressedTwice / suppressedPeople) * 100,
+    hotLowCanopyPeople: hotShare.people,
+    hotLowCanopyTwicePovertyPercent: hotShare.percent,
+    otherHeatTwicePovertyPercent: otherShare.percent,
   };
 }
 
@@ -148,9 +257,10 @@ export async function loadDashboardData(): Promise<{
   features: JoinedFeature[];
 }> {
   const base = import.meta.env.BASE_URL;
-  const [csvResponse, geoResponse] = await Promise.all([
+  const [csvResponse, geoResponse, povertyResponse] = await Promise.all([
     fetch(`${base}data/virginia_block_groups_clean.csv`),
     fetch(`${base}data/virginia_block_group_boundaries.geojson`),
+    fetch(`${base}data/virginia_poverty_ratio_2024.csv`),
   ]);
   if (!csvResponse.ok) {
     throw new Error(`Could not load the block-group table (${csvResponse.status}).`);
@@ -158,8 +268,18 @@ export async function loadDashboardData(): Promise<{
   if (!geoResponse.ok) {
     throw new Error(`Could not load block-group boundaries (${geoResponse.status}).`);
   }
-  const [csvText, geojson] = await Promise.all([csvResponse.text(), geoResponse.json()]);
-  const rows = parseCsv(csvText).map(toBlockGroup);
+  if (!povertyResponse.ok) {
+    throw new Error(`Could not load the poverty-ratio table (${povertyResponse.status}).`);
+  }
+  const [csvText, geojson, povertyText] = await Promise.all([
+    csvResponse.text(),
+    geoResponse.json(),
+    povertyResponse.text(),
+  ]);
+  const povertyById = new Map(
+    parseCsv(povertyText).map((row) => [row.block_group_geoid, row]),
+  );
+  const rows = parseCsv(csvText).map((row) => toBlockGroup({ ...row, ...povertyById.get(row.block_group_geoid) }));
   const byId = new Map(rows.map((row) => [row.block_group_geoid, row]));
   const features: JoinedFeature[] = [];
   for (const feature of geojson.features ?? []) {
