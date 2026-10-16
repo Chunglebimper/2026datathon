@@ -29,17 +29,15 @@ export function Overview({ metrics }: OverviewProps) {
       </div>
       <div className="metric-grid">
         <article className="metric-card">
-          <p className="metric-label">Block groups</p>
+          <p className="metric-label">Census Block groups</p>
           <p className="metric-value">{count(metrics.blockGroups)}</p>
-          <p className="metric-note">One row per block-group GEOID in the cleaned table.</p>
+          <p className="metric-note">each with a population of ~600 to 3000 people.</p>
         </article>
         <article className="metric-card">
           <p className="metric-label">Block groups with heat data</p>
           <p className="metric-value">{count(metrics.withHeat)}</p>
           <p className="metric-note">
-            {percent(metrics.heatPercent)} of block groups have a heat-severity mean.{" "}
-            {count(metrics.blockGroups - metrics.withHeat)} are blank because the zonal
-            join found no heat pixels.
+            {percent(metrics.heatPercent)} of census block groups have heat-severity data (primarily in urban areas).{" "}
           </p>
         </article>
         <article className="metric-card">
@@ -60,24 +58,18 @@ export function Overview({ metrics }: OverviewProps) {
             earn less than double the Census poverty line. In 2024 that line was $31,812 for a
             family of four with two children, so twice the line is about $63,600.{" "}
             {percent(metrics.belowPovertyPercent)} are under the poverty line itself.{" "}
-            {count(metrics.povertyMeasured)} block groups have someone in the count;{" "}
-            {count(metrics.povertyEmpty)} do not. {count(metrics.povertyWhereIncomeSuppressed)} still
-            have this count where median income is an insufficient sample.
           </p>
         </article>
         <article className="metric-card">
           <p className="metric-label">Canopy and impervious means</p>
           <p className="metric-value">
-            {surface(metrics.canopyMedian)}
-            <span> / {surface(metrics.imperviousMedian)}</span>
+            {surface(metrics.canopyMedian)}%
+            <span> / {surface(metrics.imperviousMedian)}%</span>
           </p>
           <p className="metric-note">
-            Median of the block-group zonal means. Canopy means in this table run from{" "}
-            {surface(metrics.canopyMin)} to {surface(metrics.canopyMax)}; impervious means
-            run from {surface(metrics.imperviousMin)} to {surface(metrics.imperviousMax)}.
-            The files do not name the unit. Other values are consistent with percent cover,
-            so percent remains flagged. {count(metrics.canopyAnomalous)} canopy block groups
-            keep a pixel maximum of 254.
+            median percent across the state. Tree Canopy coverage is the quantity of land covered by tree foilage
+            and impervious surfaces are those that impede water infiltration into soil such as concrete or asphalt.
+
           </p>
         </article>
       </div>

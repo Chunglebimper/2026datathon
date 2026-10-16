@@ -120,7 +120,7 @@ export function App() {
             {tab === "analysis" ? (
               <Analysis rows={visibleRows} placeName={placeName} statewideHeat={place === "all"} />
             ) : null}
-            {tab === "recommendations" ? <Recommendations poverty={poverty} /> : null}
+            {tab === "recommendations" ? <Recommendations poverty={poverty} metrics={metrics} placeName={placeName} visibleRows={visibleRows} /> : null}
             {tab === "methods" ? <Methodology metrics={metrics} /> : null}
           </div>
         ) : null}

@@ -81,3 +81,13 @@ export interface PlaceOption {
   jurisdictionType: string;
   blockGroups: number;
 }
+
+export interface PovertyRecommendation {
+  povertyPercent: number;
+  twicePovertyPercent: number;
+  universePeople: number;
+  belowPovertyPeople: number;
+  belowTwicePovertyPeople: number;
+  suppressedBlockGroups: number;
+  suppressedPeople: number;
+}

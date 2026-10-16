@@ -1,4 +1,10 @@
-import type { BlockGroup, CoverageMetrics, JoinedFeature, PlaceOption } from "./types";
+import type {
+  BlockGroup,
+  CoverageMetrics,
+  JoinedFeature,
+  PlaceOption,
+  PovertyRecommendation,
+} from "./types";
 
 const NUMERIC_FIELDS = [
   "land_area_sq_m",
@@ -160,29 +166,6 @@ function povertyMetrics(rows: BlockGroup[]): Pick<
   };
 }
 
-function quantile(values: number[], fraction: number): number | null {
-  if (values.length === 0) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const index = (sorted.length - 1) * fraction;
-  const lower = Math.floor(index);
-  const upper = Math.ceil(index);
-  if (lower === upper) return sorted[lower];
-  return sorted[lower] * (upper - index) + sorted[upper] * (index - lower);
-}
-
-export interface PovertyRecommendation {
-  twicePovertyPercent: number;
-  povertyPercent: number;
-  universePeople: number;
-  twicePovertyPeople: number;
-  suppressedBlockGroups: number;
-  suppressedPeople: number;
-  suppressedTwicePovertyPercent: number;
-  hotLowCanopyPeople: number;
-  hotLowCanopyTwicePovertyPercent: number;
-  otherHeatTwicePovertyPercent: number;
-}
-
 export function povertyRecommendation(rows: BlockGroup[]): PovertyRecommendation {
   const measured = rows.filter((row) => row.poverty_universe != null && row.poverty_universe > 0);
   const universe = measured.reduce((sum, row) => sum + (row.poverty_universe ?? 0), 0);
@@ -190,47 +173,14 @@ export function povertyRecommendation(rows: BlockGroup[]): PovertyRecommendation
   const belowTwice = measured.reduce((sum, row) => sum + (row.below_twice_poverty ?? 0), 0);
   const suppressed = measured.filter((row) => row.median_household_income_status === "insufficient_sample");
   const suppressedPeople = suppressed.reduce((sum, row) => sum + (row.poverty_universe ?? 0), 0);
-  const suppressedTwice = suppressed.reduce((sum, row) => sum + (row.below_twice_poverty ?? 0), 0);
-  const heatValues = rows
-    .map((row) => row.heat_severity_block_group_mean)
-    .filter((value): value is number => value != null);
-  const canopyValues = rows
-    .map((row) => row.tree_canopy_block_group_mean)
-    .filter((value): value is number => value != null);
-  const heatCut = quantile(heatValues, 0.75);
-  const canopyCut = quantile(canopyValues, 0.25);
-  const withHeat = measured.filter((row) => row.heat_severity_block_group_mean != null);
-  const hotLow =
-    heatCut == null || canopyCut == null
-      ? []
-      : withHeat.filter(
-          (row) =>
-            (row.heat_severity_block_group_mean ?? 0) >= heatCut &&
-            row.tree_canopy_block_group_mean != null &&
-            row.tree_canopy_block_group_mean <= canopyCut,
-        );
-  const otherHeat =
-    heatCut == null
-      ? []
-      : withHeat.filter((row) => (row.heat_severity_block_group_mean ?? 0) < heatCut);
-  const share = (group: BlockGroup[]) => {
-    const people = group.reduce((sum, row) => sum + (row.poverty_universe ?? 0), 0);
-    const under = group.reduce((sum, row) => sum + (row.below_twice_poverty ?? 0), 0);
-    return { people, percent: people === 0 ? 0 : (under / people) * 100 };
-  };
-  const hotShare = share(hotLow);
-  const otherShare = share(otherHeat);
   return {
-    twicePovertyPercent: universe === 0 ? 0 : (belowTwice / universe) * 100,
     povertyPercent: universe === 0 ? 0 : (belowPoverty / universe) * 100,
+    twicePovertyPercent: universe === 0 ? 0 : (belowTwice / universe) * 100,
     universePeople: universe,
-    twicePovertyPeople: belowTwice,
+    belowPovertyPeople: belowPoverty,
+    belowTwicePovertyPeople: belowTwice,
     suppressedBlockGroups: suppressed.length,
     suppressedPeople,
-    suppressedTwicePovertyPercent: suppressedPeople === 0 ? 0 : (suppressedTwice / suppressedPeople) * 100,
-    hotLowCanopyPeople: hotShare.people,
-    hotLowCanopyTwicePovertyPercent: hotShare.percent,
-    otherHeatTwicePovertyPercent: otherShare.percent,
   };
 }
 

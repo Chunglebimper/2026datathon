@@ -86,7 +86,7 @@ export function legendFor(layer: MapLayer): { title: string; note: string; items
   if (layer === "canopy") {
     return {
       title: "Tree-canopy zonal mean",
-      note: "Stored values are consistent with percent cover. The source file does not name the unit or year. A value of 0 is a measured mean, including water-only block groups.",
+      note: "Percent of land covered by tree foilage.",
       items: [
         { color: CANOPY_STOPS[0], label: "0" },
         { color: CANOPY_STOPS[1], label: "20" },
@@ -100,7 +100,7 @@ export function legendFor(layer: MapLayer): { title: string; note: string; items
   if (layer === "impervious") {
     return {
       title: "Impervious-surface zonal mean",
-      note: "Stored values are consistent with percent cover. The source file does not name the unit or year. A value of 0 is a measured mean, not a missing value.",
+      note: "Percent of land covered that impedes water infiltration into soil (ie. concrete and asphalt)",
       items: [
         { color: IMPERVIOUS_STOPS[0], label: "0" },
         { color: IMPERVIOUS_STOPS[1], label: "20" },
