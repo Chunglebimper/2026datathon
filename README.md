@@ -2,12 +2,6 @@
 
 Raw data: https://drive.google.com/drive/folders/1vdxXsQpGEyNhjCeXMStn8fUEJG6XWafo?usp=share_link
 
-hello welcome to the 2026 datathon readme
-
-i hope you like it
-
-yay
-
 The working product is a static dashboard, **Hot Neighborhoods, Higher Costs: Identifying Heat Vulnerability and Cooling Needs Across Virginia**. It is for local government staff. The map and charts use census block groups only. Census-block rows were cleaned and kept, but they are not drawn on the site. There is no composite vulnerability score, and heat classes are not treated as temperatures or compared across cities.
 
 ## Tech stack
